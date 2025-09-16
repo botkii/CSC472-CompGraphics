@@ -44,10 +44,6 @@ static int DrawModes[] = {
 
 int len = sizeof(Vertices) / sizeof(Vertices[0]);
 
-typedef QVector2D vertex1;
-std::vector<vertex1> vert_points;
-
-
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // HW1a::HW1a:
@@ -112,11 +108,8 @@ HW1a::resizeGL(int w, int h)
 	glOrtho(-xmax, xmax, -ymax, ymax, -1.0, 1.0);
 }
 
-
-
 void paintPoints() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_POINTS);
 	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
@@ -126,7 +119,6 @@ void paintPoints() {
 
 void paintLines() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_LINES);
 	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
@@ -136,7 +128,6 @@ void paintLines() {
 
 void paintLineStrip() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_LINE_STRIP);
 	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
@@ -146,7 +137,6 @@ void paintLineStrip() {
 
 void paintLineLoop() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_LINE_LOOP);
 	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
@@ -156,9 +146,8 @@ void paintLineLoop() {
 
 void paintTriangles() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_TRIANGLES);
-	for (i = 0; i < len; i+=2) {
+	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
 	}
 	glEnd();
@@ -166,7 +155,6 @@ void paintTriangles() {
 
 void paintTriangleStrip() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_TRIANGLE_STRIP);
 	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
@@ -176,7 +164,6 @@ void paintTriangleStrip() {
 
 void paintTriangleFan() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_TRIANGLE_FAN);
 	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
@@ -186,7 +173,6 @@ void paintTriangleFan() {
 
 void paintQuads() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_QUADS);
 	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
@@ -196,7 +182,6 @@ void paintQuads() {
 
 void paintPolygon() {
 	int i;
-	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_POLYGON);
 	for (i = 0; i < len; i += 2) {
 		glVertex2f(Vertices[i], Vertices[i + 1]);
@@ -213,15 +198,43 @@ void
 HW1a::paintGL()
 {
 	// PUT YOUR CODE HERE
-	//paintPoints();
-	//paintLines();
-	//paintLineStrip();
-	//paintLineLoop();
-	//paintTriangles(); 
-	//paintTriangleStrip();
-	//paintTriangleFan();
-	//paintQuads(); 
-	//paintPolygon();
+	const int w = width();
+	const int h = height();
+
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_MODELVIEW);
+
+	const int cw = w / 3;
+	const int ch = h / 3;
+
+	void (*painting[9])() = {
+		paintPoints,
+		paintLines,
+		paintLineStrip,
+		paintLineLoop,
+		paintTriangles,
+		paintTriangleStrip,
+		paintTriangleFan,
+		paintQuads,
+		paintPolygon
+	};
+
+	int i = 0;
+	for (int y = 0; y < 3; y++) {;
+		for (int x = 0; x < 3; x++, i++) {
+			const int vx = x * cw;
+			const int vy = y * ch;
+
+			glViewport(vx, vy, cw, ch);
+
+			glMatrixMode(GL_MODELVIEW);
+			glLoadIdentity();
+			if (painting[i]) {
+				painting[i]();
+			}
+		}
+	}
 }
 
 
