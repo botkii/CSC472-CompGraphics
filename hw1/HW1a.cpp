@@ -230,9 +230,7 @@ HW1a::paintGL()
 
 			glMatrixMode(GL_MODELVIEW);
 			glLoadIdentity();
-			if (painting[i]) {
-				painting[i]();
-			}
+			painting[i]();
 		}
 	}
 }
