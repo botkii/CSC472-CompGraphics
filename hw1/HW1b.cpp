@@ -55,7 +55,25 @@ HW1b::initializeGL()
 void
 HW1b::resizeGL(int w, int h)
 {
-	// PUT YOUR CODE HERE
+	glViewport(0, 0, w, h);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	// maintain aspect ratio
+	if(w <= h)
+		glOrtho(-1.0, 1.0,
+		        -1.0 * (GLfloat) h / (GLfloat) w,
+		         1.0 * (GLfloat) h / (GLfloat) w,
+		        -1.0, 1.0);
+	else
+		glOrtho(-1.0 * (GLfloat) w / (GLfloat) h,
+		         1.0 * (GLfloat) w / (GLfloat) h,
+		        -1.0, 1.0,
+		        -1.0, 1.0);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 }
 
 
@@ -68,7 +86,18 @@ HW1b::resizeGL(int w, int h)
 void
 HW1b::paintGL()
 {
-	// PUT YOUR CODE HERE
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glBegin(GL_TRIANGLES);
+	for(int i = 0; i < (int)m_points.size(); ++i) {
+		// assign the same color per facet
+		glColor3f(m_colors[i/3][0],
+		          m_colors[i/3][1],
+		          m_colors[i/3][2]);
+
+		glVertex2f(m_points[i][0], m_points[i][1]);
+	}
+	glEnd();
 }
 
 
@@ -205,7 +234,19 @@ HW1b::initBuffers()
 void
 HW1b::divideTriangle(vec2 a, vec2 b, vec2 c, int count)
 {
-	// PUT YOUR CODE HERE
+	if(count > 0) {
+		vec2 ab = (a + b) / 2.0f;
+		vec2 bc = (b + c) / 2.0f;
+		vec2 ca = (c + a) / 2.0f;
+
+		// recurse on 4 sub-triangles
+		divideTriangle(a,  ab, ca, count-1);
+		divideTriangle(b,  bc, ab, count-1);
+		divideTriangle(c,  ca, bc, count-1);
+		divideTriangle(ab, bc, ca, count-1);
+	} else {
+		triangle(a, b, c);
+	}
 }
 
 
@@ -220,9 +261,10 @@ HW1b::triangle(vec2 a, vec2 b, vec2 c)
 {
 	// init color
 	if(m_updateColor) {
-		m_colors.push_back(vec3((float) rand()/RAND_MAX,
-					(float) rand()/RAND_MAX,
-					(float) rand()/RAND_MAX));
+		vec3 col((float) rand()/RAND_MAX,
+		         (float) rand()/RAND_MAX,
+		         (float) rand()/RAND_MAX);
+		m_colors.push_back(col);
 	}
 
 	// init geometry
@@ -244,7 +286,8 @@ HW1b::rotTwist(vec2 p)
 	float d = m_twist ? sqrt(p[0]*p[0] + p[1]*p[1]) : 1;
 	float sinTheta = sin(d*m_theta);
 	float cosTheta = cos(d*m_theta);
-	return vec2(p[0]*cosTheta - p[1]*sinTheta, p[0]*sinTheta + p[1]*cosTheta);
+	return vec2(p[0]*cosTheta - p[1]*sinTheta,
+	            p[0]*sinTheta + p[1]*cosTheta);
 }
 
 
