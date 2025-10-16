@@ -12,5 +12,12 @@ uniform	int	u_Twist;	// Twist flag
 
 void main() 
 {
-	// PUT YOUR CODE HERE
+	float d   = (u_Twist != 0) ? length(a_Position) : 1.0;
+    float ang = u_Theta * d;
+    float s = sin(ang), c = cos(ang);
+    vec2 p = vec2(c*a_Position.x - s*a_Position.y,
+                  s*a_Position.x + c*a_Position.y);
+
+    gl_Position = u_Projection * u_Modelview * vec4(p, 0.0, 1.0);
+    v_Color = vec4(a_Color, 1.0); 
 }
