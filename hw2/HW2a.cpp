@@ -9,6 +9,8 @@
 
 #include "HW2a.h"
 
+static GLuint vertexBuffer = 0;
+
 // shader ID
 enum { HW2A };
 
@@ -72,6 +74,9 @@ void
 HW2a::resizeGL(int w, int h)
 {
 	// PUT YOUR CODE HERE
+	m_winW = w;
+	m_winH = h;
+	glViewport(0, 0, w, h);
 }
 
 
@@ -112,6 +117,34 @@ HW2a::paintGL()
 
 	// use glsl program
 	// PUT YOUR CODE HERE
+	m_program[HW2A].bind();
+
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);         
+	glEnableVertexAttribArray(ATTRIB_VERTEX);
+	glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	int i = 0;
+	for (int row = 0; row < 3; row++) {
+		for (int col = 0; col < 3; col++, i++) {
+			glViewport(col * w, row * h, w, h);
+
+			QMatrix4x4 P;
+			P.setToIdentity();
+
+			if (w > h) {
+				P.scale(float(h) / float(w), 1.0f, 1.0f);
+			}
+			else if (h > w) {
+				P.scale(1.0f, float(w) / float(h), 1.0f);
+			}
+
+			glUniformMatrix4fv(m_uniform[HW2A][PROJ], 1, GL_FALSE, P.constData());
+
+			glDrawArrays(DrawModes[i], 0, m_vertNum);
+		}
+	}
+
+	m_program[HW2A].release();
 
 	// disable vertex shader point size adjustment
 	glDisable(GL_VERTEX_PROGRAM_POINT_SIZE);
@@ -198,7 +231,6 @@ HW2a::initVertexBuffer()
 	m_vertNum = (int) v.size() / 2;
 
 	// create a vertex buffer
-	GLuint vertexBuffer;
 	glGenBuffers(1, &vertexBuffer);
 
 	// bind vertex buffer to the GPU and copy the vertices from CPU to GPU
