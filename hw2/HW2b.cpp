@@ -54,6 +54,9 @@ HW2b::initializeGL()
 	// init vertex and fragment shaders
 	initShaders();
 
+	glGenBuffers(1, &m_vertexBuffer);
+	glGenBuffers(1, &m_colorBuffer);
+
 	// initialize vertex buffer and write positions to vertex shader
 	initVertexBuffer();
 
@@ -73,7 +76,17 @@ HW2b::initializeGL()
 void
 HW2b::resizeGL(int w, int h)
 {
-	// PUT YOUR CODE HERE
+	float ar = (h == 0) ? 1.0f : float(w) / float(h);
+	float xmax, ymax;
+	if (ar > 1.0f) { xmax = ar; ymax = 1.0f; }
+	else { xmax = 1.0f; ymax = 1.0f / ar; }
+
+	glViewport(0, 0, w, h);
+
+	m_projection.setToIdentity();
+	m_projection.ortho(-xmax, xmax, -ymax, ymax, -1.0f, 1.0f);
+
+	updateGL();
 }
 
 
@@ -86,7 +99,35 @@ HW2b::resizeGL(int w, int h)
 void
 HW2b::paintGL()
 {
-	// PUT YOUR CODE HERE
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	// use program
+	glUseProgram(m_program[HW2B].programId());
+
+	// uniforms
+	glUniformMatrix4fv(m_uniform[HW2B][MV], 1, GL_FALSE, m_modelview.constData());
+	glUniformMatrix4fv(m_uniform[HW2B][PROJ], 1, GL_FALSE, m_projection.constData());
+	glUniform1f(m_uniform[HW2B][THETA], m_theta);
+	glUniform1i(m_uniform[HW2B][TWIST], m_twist ? 1 : 0);
+
+	// positions
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+	glEnableVertexAttribArray(ATTRIB_VERTEX);
+	glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// colors
+	glBindBuffer(GL_ARRAY_BUFFER, m_colorBuffer);
+	glEnableVertexAttribArray(ATTRIB_COLOR);
+	glVertexAttribPointer(ATTRIB_COLOR, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	// draw
+	glDrawArrays(GL_TRIANGLES, 0, m_numPoints);
+
+	// cleanup
+	glDisableVertexAttribArray(ATTRIB_VERTEX);
+	glDisableVertexAttribArray(ATTRIB_COLOR);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glUseProgram(0);
 }
 
 
@@ -265,7 +306,19 @@ HW2b::initVertexBuffer()
 void
 HW2b::divideTriangle(vec2 a, vec2 b, vec2 c, int count)
 {
-	// PUT YOUR CODE HERE
+	if (count > 0) {
+		vec2 ab = vec2((a[0] + b[0]) * 0.5f, (a[1] + b[1]) * 0.5f);
+		vec2 ac = vec2((a[0] + c[0]) * 0.5f, (a[1] + c[1]) * 0.5f);
+		vec2 bc = vec2((b[0] + c[0]) * 0.5f, (b[1] + c[1]) * 0.5f);
+
+		divideTriangle(a, ab, ac, count - 1);
+		divideTriangle(b, bc, ab, count - 1);
+		divideTriangle(c, ac, bc, count - 1);
+		divideTriangle(ab, ac, bc, count - 1);
+	}
+	else {
+		triangle(a, b, c);
+	}
 }
 
 
