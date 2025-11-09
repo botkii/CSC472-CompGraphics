@@ -114,36 +114,89 @@ HW3a::resizeGL(int w, int h)
 //
 // Update GL scene.
 //
-void
+void 
 HW3a::paintGL()
 {
 	// clear canvas with background color
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	const GLsizei count = GLsizei(m_points.size());
+
+	// ===== TEXTURE PASS =====
+	// use texture glsl program
+	// PUT YOUR CODE HERE
+	m_program[TEXTURE].bind();
+
+	// --- query attribute locations from the ACTIVE program ---
+	GLint posLoc = m_program[TEXTURE].attributeLocation("a_Position");
+	GLint uvLoc = m_program[TEXTURE].attributeLocation("a_TexCoord");
+
 	// bind vertex buffer to the GPU; enable buffer to be copied to the
 	// attribute vertex variable and specify data format
 	// PUT YOUR CODE HERE
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+	glEnableVertexAttribArray(posLoc);
+	glVertexAttribPointer(posLoc, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
 
 	// bind texture coord buffer to the GPU; enable buffer to be copied to the
 	// attribute texture coordinate variable and specify data format
 	// PUT YOUR CODE HERE
+	glBindBuffer(GL_ARRAY_BUFFER, m_texBuffer);
+	glEnableVertexAttribArray(uvLoc);
+	glVertexAttribPointer(uvLoc, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
 
-	// use texture glsl program
-	// PUT YOUR CODE HERE
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	// pass parameters to vertex shader
 	// PUT YOUR CODE HERE
+	m_program[TEXTURE].setUniformValue("u_Modelview", m_modelview);
+	m_program[TEXTURE].setUniformValue("u_Projection", m_projection);
+	m_program[TEXTURE].setUniformValue("u_Theta", m_theta);
+	m_program[TEXTURE].setUniformValue("u_Twist", int(m_twist));
+
+	// bind texture/sampler (unit 0)
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+	m_program[TEXTURE].setUniformValue("u_Sampler", 0); // sampler -> unit 0
 
 	// draw texture mapped triangles
 	// PUT YOUR CODE HERE
+	glDrawArrays(GL_TRIANGLES, 0, count);
 
-	glLineWidth(1.5f);
+	// clean up attribs for this program
+	glDisableVertexAttribArray(posLoc);
+	glDisableVertexAttribArray(uvLoc);
 
-	// draw wireframe, if necessary
-	if(m_wire) {
+	m_program[TEXTURE].release();
+
+	// ===== WIREFRAME PASS =====
+	if (m_wire) {
 		// PUT YOUR CODE HERE
+		glLineWidth(1.5f);
+		m_program[WIREFRAME].bind();
+
+		// this program may have a different location for a_Position
+		GLint posLocWire = m_program[WIREFRAME].attributeLocation("a_Position");
+
+		// positions for wireframe program
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+		glEnableVertexAttribArray(posLocWire);
+		glVertexAttribPointer(posLocWire, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid*)0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+		m_program[WIREFRAME].setUniformValue("u_Modelview", m_modelview);
+		m_program[WIREFRAME].setUniformValue("u_Projection", m_projection);
+		m_program[WIREFRAME].setUniformValue("u_Theta", m_theta);
+		m_program[WIREFRAME].setUniformValue("u_Twist", int(m_twist));
+
+		for (GLint i = 0; i < count; i += 3)
+			glDrawArrays(GL_LINE_LOOP, i, 3);
+
+		glDisableVertexAttribArray(posLocWire);
+		m_program[WIREFRAME].release();
 	}
 }
+
 
 
 
@@ -345,6 +398,28 @@ HW3a::initVertexBuffer()
 	};
 
 	// PUT YOUR CODE HERE
+	m_points.clear();
+	m_coords.clear();
+
+	// recursively subdivide
+	divideTriangle(vertices[0], vertices[1], vertices[2], m_subdivisions);
+
+	// --- upload positions ---
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		GLsizeiptr(m_points.size() * sizeof(vec2)),
+		m_points.data(),
+		GL_STATIC_DRAW);
+
+	// --- upload texture coords ---
+	glBindBuffer(GL_ARRAY_BUFFER, m_texBuffer);
+	glBufferData(GL_ARRAY_BUFFER,
+		GLsizeiptr(m_coords.size() * sizeof(vec2)),
+		m_coords.data(),
+		GL_STATIC_DRAW);
+
+	// unbind
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 
@@ -358,6 +433,21 @@ void
 HW3a::divideTriangle(vec2 a, vec2 b, vec2 c, int count)
 {
 	// PUT YOUR CODE HERE
+	if (count <= 0) {
+		triangle(a, b, c);
+		return;
+	}
+
+	// midpoints
+	vec2 ab = 0.5f * (a + b);
+	vec2 bc = 0.5f * (b + c);
+	vec2 ca = 0.5f * (c + a);
+
+	// recurse on 4 sub-triangles
+	divideTriangle(a, ab, ca, count - 1);
+	divideTriangle(ab, b, bc, count - 1);
+	divideTriangle(ca, bc, c, count - 1);
+	divideTriangle(ab, bc, ca, count - 1);
 }
 
 
