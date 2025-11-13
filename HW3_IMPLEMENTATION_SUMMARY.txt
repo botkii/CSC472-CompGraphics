@@ -1,0 +1,195 @@
+# Homework 3 - Implementation Summary
+
+This document explains the completed implementation of Homework 3 (HW3a and HW3b).
+
+## HW3a: Texture Mapped Triangle with Wireframe
+
+### What HW3a Does:
+- Displays a recursively subdivided triangle
+- Applies texture mapping using mandrill.jpg
+- Supports wireframe overlay to show triangle edges in white
+- Allows rotation with twist effect controlled by sliders
+
+### Implemented Functions:
+
+#### 1. initVertexBuffer()
+- Clears previous vertex and coordinate data
+- Recursively subdivides a triangle based on the subdivision level (0-6)
+- Stores vertex positions and texture coordinates
+- Binds vertex buffer and texture coordinate buffer to GPU
+
+#### 2. divideTriangle()
+- Recursive function that subdivides triangles
+- Base case: When count reaches 0, adds the triangle to the vertex list
+- Recursive case: Calculates midpoints and recursively divides into 4 smaller triangles
+- Each recursive level creates finer mesh details
+
+#### 3. paintGL()
+- Clears the canvas
+- Binds vertex buffer and enables vertex attributes
+- Binds texture coordinate buffer and enables texture attributes
+- Uses the TEXTURE shader program to render texture-mapped triangles
+- Passes modelview, projection, theta, and twist parameters to shaders
+- Binds the mandrill.jpg texture
+- Draws triangles with glDrawArrays(GL_TRIANGLES)
+- If wireframe is enabled, switches to WIREFRAME shader
+- Draws the same triangles in wireframe mode with white color (GL_LINES mode would draw edges)
+
+### Control Panel:
+- **Theta Slider**: Rotates the triangle (0-360 degrees)
+- **Subdivide Slider**: Controls recursion depth (0-6 levels)
+- **Twist Checkbox**: Enables/disables twist transformation (affects rotation based on distance from center)
+- **Wireframe Checkbox**: Toggles wireframe overlay
+
+---
+
+## HW3b: Wave Animation with Multiple Display Modes
+
+### What HW3b Does:
+- Renders an animated mesh grid (2x2 to 64x64)
+- Supports 10 different geometric surfaces (Flat, Spike, Hole, etc.)
+- Multiple display modes: Wireframe, Textured, Textured+Wireframe, Flat Shading, Smooth Shading, Smooth Shading + Texture
+- Animates wave propagation across the surface
+- Interactive camera and light controls with mouse
+
+### Implemented Functions:
+
+#### 1. resizeGL()
+- Saves window dimensions
+- Sets viewport to full canvas
+- Initializes perspective projection with:
+  - 45-degree field of view
+  - Aspect ratio matching window dimensions
+  - Near plane at 0.1, far plane at 100.0
+
+#### 2. resetMesh() - Geometry Implementations:
+
+**FLAT**: Creates a flat 2D grid (all z=0)
+
+**SPIKE**: Creates a single spike in the center (z=1 at center, z=0 elsewhere)
+
+**HOLE**: Creates a circular depression in the middle
+- Uses distance from center calculation
+- Creates a hole with z = -0.5 within radius of grid/4
+
+**DIAGONALWALL**: Creates a diagonal wall from corner to corner
+- Sets z = 0.5 where i == j
+
+**SIDEWALL**: Creates a vertical wall through the center
+- Sets z = 0.5 where i == grid/2
+
+**DIAGONALBLOCK**: Creates a striped diagonal pattern
+- Uses modulo arithmetic to create repeating blocks
+
+**MIDDLEBLOCK**: Creates a raised block in the center
+- Sets a quarter-sized square in the middle to z = 0.4
+
+**CORNERBLOCK**: Creates four raised blocks in the corners
+- Sets each corner quadrant to z = 0.4
+
+**HILL**: Creates a gaussian hill in the center
+- Uses exponential decay: exp(-dist²/(grid²/4))
+- Smooth, rounded hill shape
+
+**HILLFOUR**: Creates four gaussian hills
+- Four hills placed at 1/2, 3/2 positions in normalized coordinates
+- Creates a smooth multi-peaked surface
+
+#### 3. paintGL() - Display Mode Rendering:
+
+**TEXTURED_WIREFRAME case**:
+- Renders textured surface using TEX_SHADER
+- Binds mandrill.jpg texture
+- Passes view and projection matrices
+- Draws triangle strip
+- Falls through to WIREFRAME case
+
+**WIREFRAME case**:
+- Uses WIRE_SHADER program
+- Draws wireframe using GL_LINES mode
+- Uses secondary index buffer with wireframe edges
+- Displays mesh structure
+
+**Other cases**:
+- FLAT_COLOR: Uses flat shading with FLAT_SHADER
+- SMOOTH_COLOR: Uses smooth shading with SMOOTH_SHADER
+- SMOOTH_TEXTURE: Uses smooth shading with texture mapping using SMOOTH_TEX shader
+
+### Control Panel:
+- **Display Mode Combo**: Select between 6 rendering modes
+- **Geometry Combo**: Select from 10 different surfaces
+- **Size Slider**: Adjust grid resolution (2-64)
+- **Speed Slider**: Control animation speed (1-20)
+- **Play/Pause Button**: Toggle wave animation
+
+### User Interactions:
+- **Mouse Move**: Rotate camera (without Ctrl), or rotate light (with Ctrl)
+- **Mouse Wheel**: Zoom in/out
+
+---
+
+## Key Graphics Concepts Implemented:
+
+### Texture Mapping:
+- Loaded mandrill.jpg as texture
+- Created UV coordinates for both HW3a triangle and HW3b mesh
+- Used GL_TEXTURE_2D with linear filtering
+- Proper texture coordinate wrapping with GL_CLAMP_TO_EDGE
+
+### Shaders:
+- HW3a uses two shader programs:
+  - vshader3a1.glsl / fshader3a1.glsl for textured rendering
+  - vshader3a2.glsl / fshader3a2.glsl for wireframe rendering
+
+- HW3b uses five shader programs:
+  - vshader3b1.glsl / fshader3b1.glsl for textured surface
+  - vshader3b2.glsl / fshader3b2.glsl for wireframe
+  - vshader3b3.glsl / fshader3b3.glsl for flat shading
+  - vshader3b4.glsl / fshader3b4.glsl for smooth shading
+  - vshader3b5.glsl / fshader3b5.glsl for smooth shading + texture
+
+### Vertex Buffers:
+- Vertex positions (GL_ARRAY_BUFFER)
+- Texture coordinates (GL_ARRAY_BUFFER)
+- Colors (GL_ARRAY_BUFFER)
+- Normals for lighting calculations (GL_ARRAY_BUFFER)
+- Index buffers for efficient rendering (GL_ELEMENT_ARRAY_BUFFER)
+
+### Physics Simulation (HW3b):
+- Wave propagation using force calculations
+- Velocity integration
+- Position updates
+- Face normal calculations for flat shading
+- Vertex normal averaging for smooth shading
+
+---
+
+## How to Run:
+
+1. Build the project:
+   ```bash
+   qmake CS472.pro
+   make
+   ```
+
+2. Run the executable:
+   ```bash
+   ./CS472
+   ```
+
+3. In the menu bar, select **HW3**:
+   - Select "3a: Triangle (Texture/Wire)" for texture mapping demonstration
+   - Select "3b: Wave" for animated mesh with multiple display modes
+
+---
+
+## Completion Status:
+✓ HW3a: Texture mapping with recursive triangle subdivision
+✓ HW3a: Wireframe overlay with white edges
+✓ HW3b: Perspective projection implementation
+✓ HW3b: All 10 geometry modes implemented
+✓ HW3b: Textured and wireframe rendering modes
+✓ HW3b: Camera and light interaction
+✓ HW3b: Wave animation with speed control
+
+All "PUT YOUR CODE HERE" sections have been completed with proper implementations!

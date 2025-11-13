@@ -109,7 +109,17 @@ HW3b::initializeGL()
 void
 HW3b::resizeGL(int w, int h)
 {
-	// PUT YOUR CODE (use perspective projection)
+	// save window dimensions
+	m_winW = w;
+	m_winH = h;
+
+	// set viewport to occupy full canvas
+	glViewport(0, 0, w, h);
+
+	// init viewing coordinates for perspective projection
+	m_projection.setToIdentity();
+	float aspect = (float)w / (float)h;
+	m_projection.perspective(45.0f, aspect, 0.1f, 100.0f);
 }
 
 
@@ -155,12 +165,23 @@ HW3b::paintGL()
 	case TEXTURED_WIREFRAME:
 	case TEXTURED:
 		// draw textured surface
-		// PUT YOUR CODE HERE
+		glBindTexture(GL_TEXTURE_2D, m_texture);
+		glUseProgram(m_program[TEX_SHADER].programId());
+		glUniformMatrix4fv(m_uniform[TEX_SHADER][VIEW ], 1, GL_FALSE, m_camera->view().constData());
+		glUniformMatrix4fv(m_uniform[TEX_SHADER][PROJ ], 1, GL_FALSE, m_projection.constData());
+		glUniform1i(m_uniform[TEX_SHADER][SAMPLER], 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer[0]);
+		glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) m_indices_triangles.size(), GL_UNSIGNED_SHORT, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
 		if(m_displayMode != TEXTURED_WIREFRAME)
 			break;
 	case WIREFRAME:
 		// draw wireframe
-		// PUT YOUR CODE HERE
+		glUseProgram(m_program[WIRE_SHADER].programId());
+		glUniformMatrix4fv(m_uniform[WIRE_SHADER][VIEW ], 1, GL_FALSE, m_camera->view().constData());
+		glUniformMatrix4fv(m_uniform[WIRE_SHADER][PROJ ], 1, GL_FALSE, m_projection.constData());
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer[1]);
+		glDrawElements(GL_LINES, (GLsizei) m_indices_wireframe.size(), GL_UNSIGNED_SHORT, 0);
 		break;
 	case FLAT_COLOR:
 		glUseProgram(m_program[FLAT_SHADER].programId());	
@@ -362,28 +383,69 @@ HW3b::resetMesh()
 				vec.setZ((i==j && i==m_grid/2) ? 1.0f : 0.0f);
 				break;
 			case HOLE:
-				// PUT YOUR CODE HERE
+				// create a hole in the middle
+				{
+					float centerX = m_grid / 2.0f;
+					float centerY = m_grid / 2.0f;
+					float dist = sqrt((i - centerX) * (i - centerX) + (j - centerY) * (j - centerY));
+					vec.setZ((dist < m_grid / 4.0f) ? -0.5f : 0.0f);
+				}
 				break;
 			case DIAGONALWALL:
-				// PUT YOUR CODE HERE
+				// diagonal wall from corner to corner
+				vec.setZ((i == j) ? 0.5f : 0.0f);
 				break;
 			case SIDEWALL:
-				// PUT YOUR CODE HERE
+				// wall on one side
+				vec.setZ((i == m_grid / 2) ? 0.5f : 0.0f);
 				break;
 			case DIAGONALBLOCK:
-				// PUT YOUR CODE HERE
+				// diagonal block structure
+				vec.setZ(((i + j) % (m_grid / 4) < m_grid / 8) ? 0.3f : 0.0f);
 				break;
 			case MIDDLEBLOCK:
-				// PUT YOUR CODE HERE
+				// block in the middle
+				{
+					int quarter = m_grid / 4;
+					if(i > quarter && i < 3 * quarter && j > quarter && j < 3 * quarter)
+						vec.setZ(0.4f);
+					else
+						vec.setZ(0.0f);
+				}
 				break;
 			case CORNERBLOCK:
-				// PUT YOUR CODE HERE
+				// blocks in corners
+				{
+					int quarter = m_grid / 4;
+					if((i < quarter && j < quarter) || (i >= 3*quarter && j < quarter) ||
+					   (i < quarter && j >= 3*quarter) || (i >= 3*quarter && j >= 3*quarter))
+						vec.setZ(0.4f);
+					else
+						vec.setZ(0.0f);
+				}
 				break;
 			case HILL:
-				// PUT YOUR CODE HERE
+				// gaussian hill in center
+				{
+					float centerX = m_grid / 2.0f;
+					float centerY = m_grid / 2.0f;
+					float dist = sqrt((i - centerX) * (i - centerX) + (j - centerY) * (j - centerY));
+					vec.setZ(exp(-dist * dist / (m_grid * m_grid / 4.0f)));
+				}
 				break;
 			case HILLFOUR:
-				// PUT YOUR CODE HERE
+				// four gaussian hills
+				{
+					float quarter = m_grid / 4.0f;
+					float centerX = m_grid / 2.0f;
+					float centerY = m_grid / 2.0f;
+					float d1 = sqrt((i - centerX/2) * (i - centerX/2) + (j - centerY/2) * (j - centerY/2));
+					float d2 = sqrt((i - 3*centerX/2) * (i - 3*centerX/2) + (j - centerY/2) * (j - centerY/2));
+					float d3 = sqrt((i - centerX/2) * (i - centerX/2) + (j - 3*centerY/2) * (j - 3*centerY/2));
+					float d4 = sqrt((i - 3*centerX/2) * (i - 3*centerX/2) + (j - 3*centerY/2) * (j - 3*centerY/2));
+					vec.setZ(exp(-d1*d1/(quarter*quarter)) + exp(-d2*d2/(quarter*quarter)) + 
+							 exp(-d3*d3/(quarter*quarter)) + exp(-d4*d4/(quarter*quarter)));
+				}
 				break;
 		}
 	   }

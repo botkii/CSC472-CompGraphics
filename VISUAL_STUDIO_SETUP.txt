@@ -1,0 +1,98 @@
+# Running CSC472 Computer Graphics Project in Visual Studio
+
+Yes, you can definitely run this Qt project in Visual Studio! The project is already configured for Visual Studio (see the `win32-msvc*` section in the .pro file). Here are the detailed steps:
+
+## Prerequisites
+1. **Visual Studio** (2019 or later recommended)
+2. **Qt Framework** installed on your system
+3. **Qt Visual Studio Tools** extension (optional but recommended)
+
+## Method 1: Generate Visual Studio Project Files (Recommended)
+
+### Step 1: Install Qt
+- Download Qt from https://www.qt.io/download
+- Make sure Qt is in your system PATH, or note the installation directory
+
+### Step 2: Generate Visual Studio Project
+Open Command Prompt or PowerShell in your project directory and run:
+```cmd
+qmake -tp vc CS472.pro
+```
+This will generate:
+- `CS472.vcxproj` (Visual Studio project file)
+- `CS472.sln` (Visual Studio solution file)
+
+### Step 3: Open in Visual Studio
+- Double-click `CS472.sln` or open it from Visual Studio
+- Visual Studio will load the project with all source files
+
+### Step 4: Configure Build Settings
+- Select **Debug** or **Release** configuration
+- Ensure the platform is set to **x64** (the project is configured for 64-bit)
+
+### Step 5: Build and Run
+- Press **F5** to build and run with debugging
+- Or press **Ctrl+F5** to run without debugging
+- Or use **Build → Build Solution** then run
+
+## Method 2: Using Qt Visual Studio Tools Extension
+
+### Step 1: Install Qt Visual Studio Tools
+- In Visual Studio, go to **Extensions → Manage Extensions**
+- Search for "Qt Visual Studio Tools" and install it
+- Restart Visual Studio
+
+### Step 2: Import Qt Project
+- Go to **Extensions → Qt VS Tools → Open Qt Project File (.pro)**
+- Select your `CS472.pro` file
+- The extension will convert it to a Visual Studio project
+
+### Step 3: Configure Qt Settings
+- Go to **Extensions → Qt VS Tools → Qt Options**
+- Add your Qt installation path if it's not detected automatically
+
+## Method 3: Manual Project Creation (Advanced)
+
+If the above methods don't work, you can create a new Visual Studio project and manually add all the files:
+
+1. **Create New Project**:
+   - File → New → Project
+   - Choose "Console App" or "Empty Project"
+   - Name it CS472
+
+2. **Add Qt Support**:
+   - Right-click project → Properties
+   - Add Qt include paths and libraries
+
+3. **Add Source Files**:
+   - Copy all .cpp and .h files to the project
+   - Add them to the Visual Studio project
+
+## Project Configuration Notes
+
+The project is already configured for Visual Studio with these settings:
+- **Target**: x64 architecture
+- **Libraries**: OpenGL32 is linked
+- **Compiler flags**: Multi-processor compilation enabled (`/MP`)
+- **Debug info**: Full debug information (`/Zi`)
+
+## Troubleshooting
+
+**Qt not found**:
+- Ensure Qt is installed and accessible
+- Add Qt bin directory to system PATH
+- Set QTDIR environment variable
+
+**Build errors**:
+- Make sure you're building for x64 platform
+- Check that all OpenGL libraries are available
+- Verify Qt version compatibility
+
+**Missing dependencies**:
+- Install Visual C++ Redistributable if needed
+- Ensure all .glsl shader files are in correct locations
+
+## Expected Result
+When successful, you'll have a Visual Studio solution that builds a Qt application with OpenGL graphics for your computer graphics assignments.
+
+The executable will be in the Debug or Release folder and should display a Qt window with 3D graphics rendering.

@@ -109,11 +109,6 @@ HW3a::resizeGL(int w, int h)
 
 
 
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// HW3a::paintGL:
-//
-// Update GL scene.
-//
 void
 HW3a::paintGL()
 {
@@ -122,27 +117,51 @@ HW3a::paintGL()
 
 	// bind vertex buffer to the GPU; enable buffer to be copied to the
 	// attribute vertex variable and specify data format
-	// PUT YOUR CODE HERE
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+	glEnableVertexAttribArray(ATTRIB_VERTEX);
+	glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, false, 0, NULL);
 
 	// bind texture coord buffer to the GPU; enable buffer to be copied to the
 	// attribute texture coordinate variable and specify data format
-	// PUT YOUR CODE HERE
+	glBindBuffer(GL_ARRAY_BUFFER, m_texBuffer);
+	glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+	glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, false, 0, NULL);
 
 	// use texture glsl program
-	// PUT YOUR CODE HERE
+	glUseProgram(m_program[TEXTURE].programId());
 
 	// pass parameters to vertex shader
-	// PUT YOUR CODE HERE
+	glUniformMatrix4fv(m_uniform[TEXTURE][MV], 1, GL_FALSE, m_modelview.constData());
+	glUniformMatrix4fv(m_uniform[TEXTURE][PROJ], 1, GL_FALSE, m_projection.constData());
+	glUniform1f(m_uniform[TEXTURE][THETA], m_theta);
+	glUniform1i(m_uniform[TEXTURE][TWIST], m_twist);
+
+	// bind and activate texture
+	glBindTexture(GL_TEXTURE_2D, m_texture);
+	glUniform1i(m_uniform[TEXTURE][SAMPLER], 0);
 
 	// draw texture mapped triangles
-	// PUT YOUR CODE HERE
+	glDrawArrays(GL_TRIANGLES, 0, m_numPoints);
 
 	glLineWidth(1.5f);
 
 	// draw wireframe, if necessary
 	if(m_wire) {
-		// PUT YOUR CODE HERE
+		// use wireframe glsl program
+		glUseProgram(m_program[WIREFRAME].programId());
+
+		// pass parameters to vertex shader
+		glUniformMatrix4fv(m_uniform[WIREFRAME][MV], 1, GL_FALSE, m_modelview.constData());
+		glUniformMatrix4fv(m_uniform[WIREFRAME][PROJ], 1, GL_FALSE, m_projection.constData());
+		glUniform1f(m_uniform[WIREFRAME][THETA], m_theta);
+		glUniform1i(m_uniform[WIREFRAME][TWIST], m_twist);
+
+		// draw wireframe
+		glDrawArrays(GL_TRIANGLES, 0, m_numPoints);
 	}
+
+	// disable shader
+	glUseProgram(0);
 }
 
 
@@ -344,7 +363,27 @@ HW3a::initVertexBuffer()
 		vec2(-0.65f, -0.375f)
 	};
 
-	// PUT YOUR CODE HERE
+	// clear previous vertices and coordinates
+	m_points.clear();
+	m_coords.clear();
+
+	// recursively subdivide the triangle
+	divideTriangle(vertices[0], vertices[1], vertices[2], m_subdivisions);
+
+	// store number of points
+	m_numPoints = m_points.size();
+
+	// bind vertex buffer and copy position data
+	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, m_numPoints * sizeof(vec2), &m_points[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(ATTRIB_VERTEX);
+	glVertexAttribPointer(ATTRIB_VERTEX, 2, GL_FLOAT, false, 0, NULL);
+
+	// bind texture coordinate buffer and copy texture data
+	glBindBuffer(GL_ARRAY_BUFFER, m_texBuffer);
+	glBufferData(GL_ARRAY_BUFFER, m_numPoints * sizeof(vec2), &m_coords[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+	glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, false, 0, NULL);
 }
 
 
@@ -357,7 +396,20 @@ HW3a::initVertexBuffer()
 void
 HW3a::divideTriangle(vec2 a, vec2 b, vec2 c, int count)
 {
-	// PUT YOUR CODE HERE
+	if(count == 0) {
+		triangle(a, b, c);
+	} else {
+		// calculate midpoints
+		vec2 ab = (a + b) * 0.5f;
+		vec2 bc = (b + c) * 0.5f;
+		vec2 ca = (c + a) * 0.5f;
+
+		// recursively divide into 4 triangles
+		divideTriangle(a, ab, ca, count - 1);
+		divideTriangle(ab, b, bc, count - 1);
+		divideTriangle(bc, c, ca, count - 1);
+		divideTriangle(ab, bc, ca, count - 1);
+	}
 }
 
 

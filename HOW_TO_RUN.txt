@@ -1,0 +1,60 @@
+# How to Run the CSC472 Computer Graphics Project
+
+This project is a Qt-based C++ application using OpenGL for computer graphics assignments. Here are the different ways to build and run it:
+
+## Prerequisites
+You need to have the following installed:
+- **Qt Framework** (with Qt Creator IDE recommended)
+- **OpenGL libraries** (usually comes with graphics drivers)
+- **C++ compiler** (Visual Studio on Windows, GCC on Linux, Clang on macOS)
+
+## Method 1: Using Qt Creator (Recommended)
+1. **Install Qt Creator** from https://www.qt.io/download
+2. **Open the project**:
+   - Launch Qt Creator
+   - Go to File → Open File or Project
+   - Navigate to your project folder and select `CS472.pro`
+3. **Configure the project** when prompted (choose your Qt kit)
+4. **Build and Run**:
+   - Press Ctrl+R (or Cmd+R on macOS) to build and run
+   - Or use the green "Run" button in Qt Creator
+
+## Method 2: Command Line with qmake
+1. **Open terminal/command prompt** in the project directory
+2. **Generate Makefile**:
+   ```bash
+   qmake CS472.pro
+   ```
+3. **Build the project**:
+   - On Windows: `nmake` (if using Visual Studio) or `mingw32-make` (if using MinGW)
+   - On Linux/macOS: `make`
+4. **Run the executable**:
+   - On Windows: `./release/CS472.exe` or `./debug/CS472.exe`
+   - On Linux/macOS: `./CS472`
+
+## Method 3: Using Visual Studio (Windows)
+If you have Visual Studio with Qt Visual Studio Tools:
+1. **Generate Visual Studio project**:
+   ```bash
+   qmake -tp vc CS472.pro
+   ```
+2. **Open the generated .vcxproj file** in Visual Studio
+3. **Build and run** using Visual Studio's interface
+
+## Project Structure Notes
+- The main executable will be named `CS472`
+- The project includes multiple homework assignments (hw0, hw1, hw2, hw3, hw4)
+- Each assignment likely has different rendering modes or features
+- The application uses Qt widgets for the GUI and OpenGL for graphics rendering
+
+## Troubleshooting
+- **Qt not found**: Make sure Qt is installed and in your system PATH
+- **OpenGL errors**: Ensure your graphics drivers are up to date
+- **Build errors**: Check that all required dependencies are installed
+- **Missing files**: Ensure all .cpp, .h, and .glsl files are present
+
+## Running Specific Assignments
+The application likely has a menu or interface to switch between different homework assignments (HW0a, HW0b, etc.). Each assignment demonstrates different computer graphics concepts and techniques.
+
+## Expected Output
+When running successfully, you should see a Qt window with OpenGL rendering area displaying 3D graphics based on the selected homework assignment.

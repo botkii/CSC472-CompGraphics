@@ -1,0 +1,306 @@
+# Homework 3 - Implementation Reference Guide
+
+## Quick Reference: What Was Implemented
+
+### HW3a.cpp Implementation
+
+#### Function 1: initVertexBuffer()
+```
+Purpose: Initialize vertex positions and texture coordinates
+Location: Lines 310-342 (approx)
+
+What it does:
+1. Clears m_points and m_coords vectors
+2. Calls divideTriangle() recursively to subdivide the triangle
+3. Stores the number of points
+4. Binds vertex buffer and uploads position data to GPU
+5. Binds texture coordinate buffer and uploads UV data to GPU
+
+Key implementation:
+- Uses the three initial vertices of the triangle
+- Respects the m_subdivisions level (0-6)
+- Properly binds buffers with glBindBuffer and glBufferData
+```
+
+#### Function 2: divideTriangle()
+```
+Purpose: Recursively subdivide a triangle
+Location: Lines 352-368
+
+What it does:
+1. Base case (count == 0): Add the triangle to vertex list
+2. Recursive case: 
+   - Calculate midpoints of edges (ab, bc, ca)
+   - Recursively divide 4 triangles (corners and center)
+
+Key mathematics:
+- Midpoint formula: (a + b) * 0.5
+- Creates fractal-like pattern with each subdivision level
+```
+
+#### Function 3: paintGL()
+```
+Purpose: Render texture-mapped triangle with optional wireframe
+Location: Lines 116-164
+
+Rendering pipeline:
+1. Clear canvas with glClear()
+2. Bind vertex buffer and enable vertex attributes
+3. Bind texture coordinate buffer and enable texture attributes
+4. Activate TEXTURE shader program
+5. Pass modelview, projection, theta, twist to shader
+6. Bind mandrill.jpg texture
+7. Draw triangles with glDrawArrays(GL_TRIANGLES)
+8. If wireframe enabled:
+   - Switch to WIREFRAME shader
+   - Draw same triangles (white outline effect)
+9. Disable shader program
+```
+
+### HW3b.cpp Implementation
+
+#### Function 1: resizeGL()
+```
+Purpose: Set up perspective projection when window resizes
+Location: Lines 108-125
+
+Implementation:
+1. Save window width and height
+2. Set viewport to full window
+3. Create perspective projection matrix with:
+   - FOV: 45 degrees
+   - Aspect ratio: w/h
+   - Near: 0.1
+   - Far: 100.0
+
+Why perspective: Gives 3D appearance to the mesh
+```
+
+#### Function 2: resetMesh() - All 10 Geometries
+```
+Purpose: Initialize height field based on geometry mode
+Location: Lines 360-434
+
+Geometries implemented:
+
+1. FLAT: z = 0.0 everywhere
+   - Perfectly flat grid
+
+2. SPIKE: z = 1.0 at center, 0.0 elsewhere
+   - Single tall point in middle
+
+3. HOLE: z = -0.5 in circular region, 0.0 elsewhere
+   - Circular depression (radius = grid/4)
+   - Uses: dist = sqrt((i - center_x)² + (j - center_y)²)
+
+4. DIAGONALWALL: z = 0.5 where i == j, 0.0 elsewhere
+   - Diagonal line from corner to corner
+   - Simple diagonal condition
+
+5. SIDEWALL: z = 0.5 where i == grid/2, 0.0 elsewhere
+   - Vertical line through center
+   - z = 0.5 at horizontal midline
+
+6. DIAGONALBLOCK: z = 0.3 or 0.0 based on modulo pattern
+   - Creates diagonal stripes
+   - Uses: (i + j) % (grid/4)
+
+7. MIDDLEBLOCK: z = 0.4 in center square, 0.0 elsewhere
+   - Raised square in middle
+   - Bounds: (grid/4 to 3*grid/4) on both axes
+
+8. CORNERBLOCK: z = 0.4 in corners, 0.0 elsewhere
+   - Four raised blocks in corners
+   - Checks all four corner quadrants
+
+9. HILL: z = exp(-distance²/(grid²/4))
+   - Gaussian hill centered at middle
+   - Smooth, continuous surface
+
+10. HILLFOUR: Sum of four gaussian hills
+    - Four hills at 1/2, 3/2 positions
+    - Creates multi-peaked landscape
+```
+
+#### Function 3: paintGL() - Display Modes
+```
+Purpose: Render mesh with different display modes
+Location: Lines 165-206
+
+Switch statement implementation:
+
+TEXTURED_WIREFRAME and TEXTURED:
+- Bind mandrill.jpg texture with glBindTexture()
+- Use TEX_SHADER program
+- Pass view and projection matrices
+- Draw GL_TRIANGLE_STRIP with m_indices_triangles
+- Falls through to WIREFRAME if combined mode
+
+WIREFRAME:
+- Use WIRE_SHADER program
+- Bind GL_ELEMENT_ARRAY_BUFFER with wireframe indices
+- Draw GL_LINES mode with m_indices_wireframe
+
+Other modes (FLAT_COLOR, SMOOTH_COLOR, SMOOTH_TEXTURE):
+- Use corresponding shader programs
+- Pass lighting information
+- Draw with triangle strip indices
+
+Key OpenGL functions used:
+- glUseProgram(): Select shader
+- glBindTexture(): Activate texture
+- glUniformMatrix4fv(): Pass matrices to shader
+- glBindBuffer(): Select buffer
+- glDrawElements(): Render with indices
+```
+
+---
+
+## Data Structures Used
+
+### HW3a Member Variables:
+```
+m_points: vector<vec2>        // Vertex positions after subdivision
+m_coords: vector<vec2>        // Texture coordinates (UV)
+m_numPoints: int              // Total vertices count
+m_vertexBuffer: GLuint        // GPU buffer ID for positions
+m_texBuffer: GLuint           // GPU buffer ID for texture coords
+m_texture: GLuint             // OpenGL texture ID
+m_image: QImage               // Loaded mandrill.jpg
+m_modelview: QMatrix4x4       // Rotation matrix
+m_projection: QMatrix4x4      // Orthographic projection matrix
+m_theta: float                // Rotation angle in radians
+m_twist: bool                 // Twist effect enabled
+m_wire: bool                  // Wireframe enabled
+m_subdivisions: int           // Recursion depth (0-6)
+```
+
+### HW3b Member Variables:
+```
+m_vertices[MAXGRID][MAXGRID]:    vec3   // XYZ positions
+m_texCoords[MAXGRID][MAXGRID]:   vec2   // UV texture coordinates
+m_vertNorms[MAXGRID][MAXGRID]:   vec3   // Vertex normals (smooth shading)
+m_faceNorms[2][MAXGRID][MAXGRID]: vec3  // Face normals (flat shading)
+m_force[MAXGRID][MAXGRID]:       float  // Force values for wave simulation
+m_veloc[MAXGRID][MAXGRID]:       float  // Velocity values for wave
+m_points: vector<vec3>           // Flattened vertex data
+m_coords: vector<vec2>           // Flattened texture coordinates
+m_normals: vector<vec3>          // Flattened normals
+m_indices_triangles: vector<ushort> // Triangle indices with degenerate triangles
+m_indices_wireframe: vector<ushort> // Line segment indices
+m_vertexBuffer: GLuint           // GPU buffer for positions
+m_texBuffer: GLuint              // GPU buffer for texture coords
+m_normalBuffer: GLuint           // GPU buffer for normals
+m_colorBuffer: GLuint            // GPU buffer for colors
+m_projection: QMatrix4x4         // Perspective projection matrix
+m_camera: Camera*                // Camera object for view matrix
+m_light: Light*                  // Light object for illumination
+```
+
+---
+
+## Shader Program Usage
+
+### HW3a Shaders:
+1. **TEXTURE** (index 0):
+   - vshader3a1.glsl: Handles vertex transformation and twist
+   - fshader3a1.glsl: Applies texture mapping
+   
+2. **WIREFRAME** (index 1):
+   - vshader3a2.glsl: Vertex transformation
+   - fshader3a2.glsl: Outputs white color
+
+### HW3b Shaders:
+1. **TEX_SHADER** (index 0): Textured rendering
+2. **WIRE_SHADER** (index 1): Wireframe rendering
+3. **FLAT_SHADER** (index 2): Flat shading
+4. **SMOOTH_SHADER** (index 3): Smooth shading
+5. **SMOOTH_TEX** (index 4): Smooth shading + texture
+
+---
+
+## Performance Considerations
+
+### Grid Size Impact:
+- 2x2: Very fast, minimal vertices
+- 32x32: Default, good balance
+- 64x64: 4096 vertices, more computational load
+
+### Subdivision Levels (HW3a):
+- Level 0: 3 vertices (1 triangle)
+- Level 1: 9 vertices (4 triangles)
+- Level 2: 27 vertices (16 triangles)
+- Level 6: 19683 vertices (max)
+
+### Wave Physics:
+- updateGL() called at 50ms intervals when animating
+- Force recalculation checks 8 neighbors per pixel
+- O(grid²) complexity for physics updates
+
+---
+
+## Testing Recommendations
+
+1. **Texture Mapping (HW3a)**:
+   - Verify mandrill.jpg appears correctly
+   - Check different subdivision levels
+   - Confirm rotation smoothness
+
+2. **Wireframe (HW3a)**:
+   - Enable wireframe checkbox
+   - Verify white edges appear over texture
+   - Check at different zoom levels
+
+3. **Geometries (HW3b)**:
+   - Test each geometry from dropdown
+   - Verify smooth transitions
+   - Check corner cases (2x2 and 64x64)
+
+4. **Display Modes (HW3b)**:
+   - Test all 6 display modes
+   - Switch between modes while animating
+   - Verify texture loads correctly
+
+5. **Animation (HW3b)**:
+   - Start/stop button functionality
+   - Speed slider responsiveness
+   - Wave propagation correctness
+
+6. **Interactivity**:
+   - Camera rotation (mouse drag)
+   - Light rotation (Ctrl + mouse drag)
+   - Zoom (mouse wheel)
+
+---
+
+## Common Issues and Solutions
+
+**Issue**: Texture doesn't appear
+**Solution**: Ensure mandrill.jpg is in resources (:/mandrill.jpg)
+
+**Issue**: Wireframe not visible
+**Solution**: Check that m_wire flag is enabled, ensure line width is sufficient
+
+**Issue**: Wave doesn't animate
+**Solution**: Click Play button, ensure speed > 1
+
+**Issue**: Performance slow at grid 64x64
+**Solution**: Reduce grid size or disable animation
+
+**Issue**: Camera view looks wrong
+**Solution**: Check that perspective projection is using correct FOV (45 degrees)
+
+---
+
+## Future Enhancements
+
+Possible additions not required for this assignment:
+- Damping factor for wave animation
+- Custom texture upload
+- Multiple light sources
+- Surface material properties
+- Collision detection
+- Particle systems
+- Post-processing effects
+
+All homework 3 requirements have been fully implemented!

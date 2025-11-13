@@ -1,0 +1,39 @@
+# CSC472-CompGraphics Project Overview
+
+This repository appears to be a course project for CSC472: Computer Graphics. It is organized into several folders and files, primarily using C++ and GLSL (OpenGL Shading Language). Below is a summary of the main components and their roles:
+
+## Main Structure
+- **main.cpp, MainWindow.cpp/h**: Likely the entry point and main window logic for the application, possibly using Qt for GUI.
+- **HW.cpp/h**: General homework or assignment logic shared across tasks.
+- **dummy.cpp/h**: Placeholder or test code.
+
+## Geometry
+- **geometry/**: Contains C++ classes for geometric primitives (Cone, Cube, Cylinder, Sphere, Scene, Geometry). These are used to represent and manipulate 3D objects in the graphics application.
+
+## Camera
+- **camera/**: Camera class for handling view transformations and perspective in 3D scenes.
+
+## Lighting
+- **lighting/**: Light class for managing scene lighting, likely supporting different light types and properties.
+
+## Homework Assignments
+- **hw0, hw1, hw2, hw3, hw4/**: Each folder contains C++ source/header files and GLSL shader files for different homework assignments. These assignments likely cover topics such as:
+  - Basic rendering and shaders (hw0)
+  - Transformations and object manipulation (hw1)
+  - Advanced shading and effects (hw2, hw3, hw4)
+
+## Resources
+- **earth.jpg, mandrill.jpg, moon.jpg, sun.jpg**: Image files used as textures or backgrounds in assignments.
+
+## Qt Project Files
+- **.pro, .qrc, .rc, .ico, .icns**: Qt project configuration, resource, and icon files for building and running the application with Qt.
+
+## Summary
+This project is a comprehensive computer graphics coursework repository. It demonstrates:
+- 3D geometry modeling
+- Camera and lighting systems
+- Use of shaders for rendering
+- Application structure with Qt
+- Progressive assignments building up graphics concepts
+
+Each folder and file contributes to learning and implementing core graphics techniques, with a focus on C++ and OpenGL/GLSL.
