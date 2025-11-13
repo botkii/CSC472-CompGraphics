@@ -109,7 +109,19 @@ HW3b::initializeGL()
 void
 HW3b::resizeGL(int w, int h)
 {
-	// PUT YOUR CODE (use perspective projection)
+	// save window dimensions
+	m_winW = w;
+	m_winH = h;
+
+	// set viewport to occupy full canvas
+	glViewport(0, 0, w, h);
+
+	// compute aspect ratio
+	float ar = (float) w / h;
+
+	// init viewing coordinates for perspective projection
+	m_projection.setToIdentity();
+	m_projection.perspective(45.0f, ar, 0.1f, 100.0f);
 }
 
 
@@ -155,12 +167,24 @@ HW3b::paintGL()
 	case TEXTURED_WIREFRAME:
 	case TEXTURED:
 		// draw textured surface
-		// PUT YOUR CODE HERE
+		glBindTexture(GL_TEXTURE_2D, m_texture);
+		glUseProgram(m_program[TEX_SHADER].programId());
+		glUniformMatrix4fv(m_uniform[TEX_SHADER][VIEW], 1, GL_FALSE, m_camera->view().constData());
+		glUniformMatrix4fv(m_uniform[TEX_SHADER][PROJ], 1, GL_FALSE, m_projection.constData());
+		glUniform1i(m_uniform[TEX_SHADER][SAMPLER], 0);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer[0]);
+		glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) m_indices_triangles.size(), GL_UNSIGNED_SHORT, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
 		if(m_displayMode != TEXTURED_WIREFRAME)
 			break;
 	case WIREFRAME:
 		// draw wireframe
-		// PUT YOUR CODE HERE
+		glLineWidth(1.5f);
+		glUseProgram(m_program[WIRE_SHADER].programId());
+		glUniformMatrix4fv(m_uniform[WIRE_SHADER][VIEW], 1, GL_FALSE, m_camera->view().constData());
+		glUniformMatrix4fv(m_uniform[WIRE_SHADER][PROJ], 1, GL_FALSE, m_projection.constData());
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer[1]);
+		glDrawElements(GL_LINES, (GLsizei) m_indices_wireframe.size(), GL_UNSIGNED_SHORT, 0);
 		break;
 	case FLAT_COLOR:
 		glUseProgram(m_program[FLAT_SHADER].programId());	
@@ -362,28 +386,98 @@ HW3b::resetMesh()
 				vec.setZ((i==j && i==m_grid/2) ? 1.0f : 0.0f);
 				break;
 			case HOLE:
-				// PUT YOUR CODE HERE
+				// hole in center
+				{
+					int center = m_grid / 2;
+					int radius = m_grid / 8;
+					float dx = i - center;
+					float dy = j - center;
+					float dist = sqrtf(dx * dx + dy * dy);
+					vec.setZ((dist < radius) ? -0.5f : 0.0f);
+				}
 				break;
 			case DIAGONALWALL:
-				// PUT YOUR CODE HERE
+				// diagonal wall from corner to corner
+				{
+					int size = m_grid - 1;
+					float ratio = (float)(i + j) / (2 * size);
+					vec.setZ(ratio * 0.5f);
+				}
 				break;
 			case SIDEWALL:
-				// PUT YOUR CODE HERE
+				// vertical wall on one side
+				{
+					int midpoint = m_grid / 2;
+					vec.setZ((i < midpoint) ? 0.3f : 0.0f);
+				}
 				break;
 			case DIAGONALBLOCK:
-				// PUT YOUR CODE HERE
+				// diagonal block in center
+				{
+					int center = m_grid / 2;
+					int size = m_grid / 6;
+					if((i > center - size && i < center + size) &&
+					   (j > center - size && j < center + size) &&
+					   (i - j) < size && (j - i) < size)
+						vec.setZ(0.7f);
+					else
+						vec.setZ(0.0f);
+				}
 				break;
 			case MIDDLEBLOCK:
-				// PUT YOUR CODE HERE
+				// block in the middle
+				{
+					int center = m_grid / 2;
+					int size = m_grid / 8;
+					if((i > center - size && i < center + size) &&
+					   (j > center - size && j < center + size))
+						vec.setZ(0.5f);
+					else
+						vec.setZ(0.0f);
+				}
 				break;
 			case CORNERBLOCK:
-				// PUT YOUR CODE HERE
+				// blocks in corners
+				{
+					int size = m_grid / 8;
+					bool inCorner = (i < size || i >= m_grid - size) &&
+							 (j < size || j >= m_grid - size);
+					vec.setZ(inCorner ? 0.4f : 0.0f);
+				}
 				break;
 			case HILL:
-				// PUT YOUR CODE HERE
+				// smooth hill in center
+				{
+					int center = m_grid / 2;
+					float dx = i - center;
+					float dy = j - center;
+					float dist = sqrtf(dx * dx + dy * dy);
+					float maxDist = m_grid / 2.5f;
+					vec.setZ(fmaxf(0.0f, 0.5f * (1.0f - dist / maxDist)));
+				}
 				break;
 			case HILLFOUR:
-				// PUT YOUR CODE HERE
+				// four hills in quadrants
+				{
+					int quarterX = m_grid / 4;
+					int quarterY = m_grid / 4;
+					// Four peak positions
+					int peaks[4][2] = {
+						{quarterX, quarterY},
+						{3*quarterX, quarterY},
+						{quarterX, 3*quarterY},
+						{3*quarterX, 3*quarterY}
+					};
+					vec.setZ(0.0f);
+					for(int p = 0; p < 4; ++p) {
+						float dx = i - peaks[p][0];
+						float dy = j - peaks[p][1];
+						float dist = sqrtf(dx * dx + dy * dy);
+						float radius = m_grid / 6.0f;
+						if(dist < radius)
+							vec.setZ(fmaxf(vec.z(), 0.4f * (1.0f - dist / radius)));
+					}
+				}
 				break;
 		}
 	   }
