@@ -195,7 +195,7 @@ HW3b::paintGL()
 		glUseProgram(m_program[SMOOTH_SHADER].programId());	
 		glUniformMatrix4fv(m_uniform[SMOOTH_SHADER][VIEW ], 1, GL_FALSE, m_camera->view().constData());
 		glUniformMatrix4fv(m_uniform[SMOOTH_SHADER][PROJ ], 1, GL_FALSE, m_projection.constData());
-		glUniform3fv(m_uniform[FLAT_SHADER][LIGHTDIR], 1, &m_light->eye()[0]);
+		glUniform3fv(m_uniform[SMOOTH_SHADER][LIGHTDIR], 1, &m_light->eye()[0]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer[0]);
 		glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) m_indices_triangles.size(), GL_UNSIGNED_SHORT, 0);
 		break;
