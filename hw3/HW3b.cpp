@@ -116,12 +116,10 @@ HW3b::resizeGL(int w, int h)
 	// set viewport to occupy full canvas
 	glViewport(0, 0, w, h);
 
-	// compute aspect ratio
-	float ar = (float) w / h;
-
 	// init viewing coordinates for perspective projection
 	m_projection.setToIdentity();
-	m_projection.perspective(45.0f, ar, 0.1f, 100.0f);
+	float aspect = (float)w / (float)h;
+	m_projection.perspective(45.0f, aspect, 0.1f, 100.0f);
 }
 
 
@@ -169,8 +167,8 @@ HW3b::paintGL()
 		// draw textured surface
 		glBindTexture(GL_TEXTURE_2D, m_texture);
 		glUseProgram(m_program[TEX_SHADER].programId());
-		glUniformMatrix4fv(m_uniform[TEX_SHADER][VIEW], 1, GL_FALSE, m_camera->view().constData());
-		glUniformMatrix4fv(m_uniform[TEX_SHADER][PROJ], 1, GL_FALSE, m_projection.constData());
+		glUniformMatrix4fv(m_uniform[TEX_SHADER][VIEW ], 1, GL_FALSE, m_camera->view().constData());
+		glUniformMatrix4fv(m_uniform[TEX_SHADER][PROJ ], 1, GL_FALSE, m_projection.constData());
 		glUniform1i(m_uniform[TEX_SHADER][SAMPLER], 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer[0]);
 		glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) m_indices_triangles.size(), GL_UNSIGNED_SHORT, 0);
@@ -179,10 +177,9 @@ HW3b::paintGL()
 			break;
 	case WIREFRAME:
 		// draw wireframe
-		glLineWidth(1.5f);
 		glUseProgram(m_program[WIRE_SHADER].programId());
-		glUniformMatrix4fv(m_uniform[WIRE_SHADER][VIEW], 1, GL_FALSE, m_camera->view().constData());
-		glUniformMatrix4fv(m_uniform[WIRE_SHADER][PROJ], 1, GL_FALSE, m_projection.constData());
+		glUniformMatrix4fv(m_uniform[WIRE_SHADER][VIEW ], 1, GL_FALSE, m_camera->view().constData());
+		glUniformMatrix4fv(m_uniform[WIRE_SHADER][PROJ ], 1, GL_FALSE, m_projection.constData());
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer[1]);
 		glDrawElements(GL_LINES, (GLsizei) m_indices_wireframe.size(), GL_UNSIGNED_SHORT, 0);
 		break;
@@ -198,7 +195,7 @@ HW3b::paintGL()
 		glUseProgram(m_program[SMOOTH_SHADER].programId());	
 		glUniformMatrix4fv(m_uniform[SMOOTH_SHADER][VIEW ], 1, GL_FALSE, m_camera->view().constData());
 		glUniformMatrix4fv(m_uniform[SMOOTH_SHADER][PROJ ], 1, GL_FALSE, m_projection.constData());
-		glUniform3fv(m_uniform[FLAT_SHADER][LIGHTDIR], 1, &m_light->eye()[0]);
+		glUniform3fv(m_uniform[SMOOTH_SHADER][LIGHTDIR], 1, &m_light->eye()[0]);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer[0]);
 		glDrawElements(GL_TRIANGLE_STRIP, (GLsizei) m_indices_triangles.size(), GL_UNSIGNED_SHORT, 0);
 		break;
@@ -383,55 +380,52 @@ HW3b::resetMesh()
 				vec.setZ(0.0f);
 				break;
 			case SPIKE:
-				vec.setZ((i==j && i==m_grid/2) ? 1.0f : 0.0f);
-				break;
-			case HOLE:
-				// hole in center
+				// create a spike at the center of the grid
 				{
 					int center = m_grid / 2;
-					int radius = m_grid / 8;
-					float dx = i - center;
-					float dy = j - center;
-					float dist = sqrtf(dx * dx + dy * dy);
-					vec.setZ((dist < radius) ? -0.5f : 0.0f);
-				}
-				break;
-			case DIAGONALWALL:
-				// diagonal wall from corner to corner
-				{
-					int size = m_grid - 1;
-					float ratio = (float)(i + j) / (2 * size);
-					vec.setZ(ratio * 0.5f);
-				}
-				break;
-			case SIDEWALL:
-				// vertical wall on one side
-				{
-					int midpoint = m_grid / 2;
-					vec.setZ((i < midpoint) ? 0.3f : 0.0f);
-				}
-				break;
-			case DIAGONALBLOCK:
-				// diagonal block in center
-				{
-					int center = m_grid / 2;
-					int size = m_grid / 6;
-					if((i > center - size && i < center + size) &&
-					   (j > center - size && j < center + size) &&
-					   (i - j) < size && (j - i) < size)
-						vec.setZ(0.7f);
+					// For even grids, use center-1 to center+1; for odd, just center
+					if((m_grid % 2 == 0 && (i == center-1 || i == center) && (j == center-1 || j == center)) ||
+					   (m_grid % 2 == 1 && i == center && j == center))
+						vec.setZ(1.0f);
 					else
 						vec.setZ(0.0f);
 				}
 				break;
+			case HOLE:
+				// create a hole in the middle
+				{
+					float centerX = m_grid / 2.0f;
+					float centerY = m_grid / 2.0f;
+					float dist = sqrt((i - centerX) * (i - centerX) + (j - centerY) * (j - centerY));
+					vec.setZ((dist < m_grid / 4.0f) ? -0.5f : 0.0f);
+				}
+				break;
+			case DIAGONALWALL:
+				// diagonal wall from corner to corner
+				vec.setZ((i == j) ? 0.5f : 0.0f);
+				break;
+			case SIDEWALL:
+				// wall through the center vertically
+				{
+					int center = m_grid / 2;
+					// For even grids, create wall at center-1 and center; for odd, just center
+					if((m_grid % 2 == 0 && (i == center-1 || i == center)) ||
+					   (m_grid % 2 == 1 && i == center))
+						vec.setZ(0.5f);
+					else
+						vec.setZ(0.0f);
+				}
+				break;
+			case DIAGONALBLOCK:
+				// diagonal block structure
+				vec.setZ(((i + j) % (m_grid / 4) < m_grid / 8) ? 0.3f : 0.0f);
+				break;
 			case MIDDLEBLOCK:
 				// block in the middle
 				{
-					int center = m_grid / 2;
-					int size = m_grid / 8;
-					if((i > center - size && i < center + size) &&
-					   (j > center - size && j < center + size))
-						vec.setZ(0.5f);
+					int quarter = m_grid / 4;
+					if(i > quarter && i < 3 * quarter && j > quarter && j < 3 * quarter)
+						vec.setZ(0.4f);
 					else
 						vec.setZ(0.0f);
 				}
@@ -439,44 +433,35 @@ HW3b::resetMesh()
 			case CORNERBLOCK:
 				// blocks in corners
 				{
-					int size = m_grid / 8;
-					bool inCorner = (i < size || i >= m_grid - size) &&
-							 (j < size || j >= m_grid - size);
-					vec.setZ(inCorner ? 0.4f : 0.0f);
+					int quarter = m_grid / 4;
+					if((i < quarter && j < quarter) || (i >= 3*quarter && j < quarter) ||
+					   (i < quarter && j >= 3*quarter) || (i >= 3*quarter && j >= 3*quarter))
+						vec.setZ(0.4f);
+					else
+						vec.setZ(0.0f);
 				}
 				break;
 			case HILL:
-				// smooth hill in center
+				// gaussian hill in center
 				{
-					int center = m_grid / 2;
-					float dx = i - center;
-					float dy = j - center;
-					float dist = sqrtf(dx * dx + dy * dy);
-					float maxDist = m_grid / 2.5f;
-					vec.setZ(fmaxf(0.0f, 0.5f * (1.0f - dist / maxDist)));
+					float centerX = m_grid / 2.0f;
+					float centerY = m_grid / 2.0f;
+					float dist = sqrt((i - centerX) * (i - centerX) + (j - centerY) * (j - centerY));
+					vec.setZ(exp(-dist * dist / (m_grid * m_grid / 4.0f)));
 				}
 				break;
 			case HILLFOUR:
-				// four hills in quadrants
+				// four gaussian hills
 				{
-					int quarterX = m_grid / 4;
-					int quarterY = m_grid / 4;
-					// Four peak positions
-					int peaks[4][2] = {
-						{quarterX, quarterY},
-						{3*quarterX, quarterY},
-						{quarterX, 3*quarterY},
-						{3*quarterX, 3*quarterY}
-					};
-					vec.setZ(0.0f);
-					for(int p = 0; p < 4; ++p) {
-						float dx = i - peaks[p][0];
-						float dy = j - peaks[p][1];
-						float dist = sqrtf(dx * dx + dy * dy);
-						float radius = m_grid / 6.0f;
-						if(dist < radius)
-							vec.setZ(fmaxf(vec.z(), 0.4f * (1.0f - dist / radius)));
-					}
+					float quarter = m_grid / 4.0f;
+					float centerX = m_grid / 2.0f;
+					float centerY = m_grid / 2.0f;
+					float d1 = sqrt((i - centerX/2) * (i - centerX/2) + (j - centerY/2) * (j - centerY/2));
+					float d2 = sqrt((i - 3*centerX/2) * (i - 3*centerX/2) + (j - centerY/2) * (j - centerY/2));
+					float d3 = sqrt((i - centerX/2) * (i - centerX/2) + (j - 3*centerY/2) * (j - 3*centerY/2));
+					float d4 = sqrt((i - 3*centerX/2) * (i - 3*centerX/2) + (j - 3*centerY/2) * (j - 3*centerY/2));
+					vec.setZ(exp(-d1*d1/(quarter*quarter)) + exp(-d2*d2/(quarter*quarter)) + 
+							 exp(-d3*d3/(quarter*quarter)) + exp(-d4*d4/(quarter*quarter)));
 				}
 				break;
 		}
@@ -712,6 +697,11 @@ HW3b::initVertices()
 	// map the grid coordinates to [-1.0, 1.0]; function called when m_grid changes
 	// flip y-coordinates because array orientation is upside down wrt graphics coordinates
 	int size = m_grid - 1;
+	
+	// clear and resize colors vector to match new grid size
+	m_colors.clear();
+	m_colors.reserve(m_grid * m_grid);
+	
 	for(int y=0; y < m_grid; ++y) {
 		for(int x=0; x < m_grid; ++x) {
 			vec3 &vec = m_vertices[y][x];
@@ -1124,7 +1114,7 @@ HW3b::playPauseAnimation()
 	} else {
 		m_wave = true;
 		m_buttonStart->setText("Pause");
-		m_timer->start(50);
+		m_timer->start(10);
 
 	}
 }
