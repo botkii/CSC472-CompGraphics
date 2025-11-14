@@ -52,3 +52,4 @@ void main()
 		       LightPower * pow(cosAlpha,5) * MaterialSpecularColor * LightColor), 1.0);
 		       
 }
+
