@@ -380,7 +380,16 @@ HW3b::resetMesh()
 				vec.setZ(0.0f);
 				break;
 			case SPIKE:
-				vec.setZ((i==j && i==m_grid/2) ? 1.0f : 0.0f);
+				// create a spike at the center of the grid
+				{
+					int center = m_grid / 2;
+					// For even grids, use center-1 to center+1; for odd, just center
+					if((m_grid % 2 == 0 && (i == center-1 || i == center) && (j == center-1 || j == center)) ||
+					   (m_grid % 2 == 1 && i == center && j == center))
+						vec.setZ(1.0f);
+					else
+						vec.setZ(0.0f);
+				}
 				break;
 			case HOLE:
 				// create a hole in the middle
@@ -396,8 +405,16 @@ HW3b::resetMesh()
 				vec.setZ((i == j) ? 0.5f : 0.0f);
 				break;
 			case SIDEWALL:
-				// wall on one side
-				vec.setZ((i == m_grid / 2) ? 0.5f : 0.0f);
+				// wall through the center vertically
+				{
+					int center = m_grid / 2;
+					// For even grids, create wall at center-1 and center; for odd, just center
+					if((m_grid % 2 == 0 && (i == center-1 || i == center)) ||
+					   (m_grid % 2 == 1 && i == center))
+						vec.setZ(0.5f);
+					else
+						vec.setZ(0.0f);
+				}
 				break;
 			case DIAGONALBLOCK:
 				// diagonal block structure
@@ -680,6 +697,11 @@ HW3b::initVertices()
 	// map the grid coordinates to [-1.0, 1.0]; function called when m_grid changes
 	// flip y-coordinates because array orientation is upside down wrt graphics coordinates
 	int size = m_grid - 1;
+	
+	// clear and resize colors vector to match new grid size
+	m_colors.clear();
+	m_colors.reserve(m_grid * m_grid);
+	
 	for(int y=0; y < m_grid; ++y) {
 		for(int x=0; x < m_grid; ++x) {
 			vec3 &vec = m_vertices[y][x];
@@ -1092,7 +1114,7 @@ HW3b::playPauseAnimation()
 	} else {
 		m_wave = true;
 		m_buttonStart->setText("Pause");
-		m_timer->start(50);
+		m_timer->start(10);
 
 	}
 }
