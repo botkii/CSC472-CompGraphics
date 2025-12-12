@@ -175,6 +175,7 @@ HW4b::paintGL()
 	glPushMatrix();
 	glTranslatef(0.0f, height, 0.0f);
 	glScalef(s1, s2, s1);
+	glColor3f(1.0f, 0.84f, 0.0f);  // golden/yellow color for ellipsoid
 	drawSphere(32, 32);
 	glPopMatrix();
 
