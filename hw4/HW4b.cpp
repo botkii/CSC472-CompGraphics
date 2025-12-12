@@ -286,4 +286,3 @@ HW4b::timeOut()
 	// restart animation
 	m_timer->start(5);
 }
-
