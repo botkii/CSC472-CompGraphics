@@ -142,7 +142,10 @@ HW4b::paintGL()
 
 	// init projection matrix with identity matrix and a non-zero m[7] entry
 	// based on light position component
-// PUT YOUR CODE HERE
+	QMatrix4x4 shadowMatrix;
+	shadowMatrix.setToIdentity();
+	shadowMatrix(3, 1) = -1.0 / nlp[1];
+	shadowMatrix(3, 3) = 0;
 
 	// setup camera view
 	glLoadIdentity();
@@ -159,7 +162,7 @@ HW4b::paintGL()
 	glMultMatrixf(m_cameraView.constData());
 
 	// update the position of light0
-// PUT YOUR CODE HERE
+	glLightfv(GL_LIGHT0, GL_POSITION, nlp);
 
 	// enable lighting and color material
 	glEnable(GL_LIGHTING);
@@ -169,17 +172,36 @@ HW4b::paintGL()
 	glMaterialfv(GL_FRONT, GL_SPECULAR, m_gray);
 
 	// draw the translated/scaled sphere object
-// PUT YOUR CODE HERE
+	glPushMatrix();
+	glTranslatef(0.0f, height, 0.0f);
+	glScalef(s1, s2, s1);
+	drawSphere(32, 32);
+	glPopMatrix();
 
 	// disable lighting
 	glDisable(GL_COLOR_MATERIAL);
 	glDisable(GL_LIGHTING);
 
 	// draw object's shadow (projected onto the xz plane)
-// PUT YOUR CODE HERE
+	glPushMatrix();
+	glMultMatrixf(shadowMatrix.constData());
+	glTranslatef(0.0f, height, 0.0f);
+	glScalef(s1, s2, s1);
+	glDisable(GL_LIGHTING);
+	glColor3f(0.2f, 0.2f, 0.2f);
+	drawSphere(32, 32);
+	glEnable(GL_LIGHTING);
+	glPopMatrix();
 
 	// draw the light source
-// PUT YOUR CODE HERE
+	glPushMatrix();
+	glTranslatef(nlp[0], nlp[1], nlp[2]);
+	glDisable(GL_LIGHTING);
+	glColor3f(1.0f, 1.0f, 0.0f);
+	glScalef(0.2f, 0.2f, 0.2f);
+	drawSphere(16, 16);
+	glEnable(GL_LIGHTING);
+	glPopMatrix();
 
 	// draw the xz floor
 	glColor4f(.5f, .5f, .5f, 1);
@@ -220,7 +242,28 @@ HW4b::controlPanel()
 void 
 HW4b::drawSphere(int lats, int longs)
 {
-// PUT YOUR CODE HERE
+	for (int i = 0; i < lats; i++) {
+		float lat0 = PII * (-0.5 + (float)(i - 1) / lats);
+		float z0 = sin(lat0);
+		float zr0 = cos(lat0);
+
+		float lat1 = PII * (-0.5 + (float)i / lats);
+		float z1 = sin(lat1);
+		float zr1 = cos(lat1);
+
+		glBegin(GL_QUAD_STRIP);
+		for (int j = 0; j <= longs; j++) {
+			float lng = 2 * PII * (float)(j - 1) / longs;
+			float x = cos(lng);
+			float y = sin(lng);
+
+			glNormal3f(x * zr0, y * zr0, z0);
+			glVertex3f(x * zr0, y * zr0, z0);
+			glNormal3f(x * zr1, y * zr1, z1);
+			glVertex3f(x * zr1, y * zr1, z1);
+		}
+		glEnd();
+	}
 }
 
 
