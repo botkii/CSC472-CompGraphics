@@ -354,8 +354,15 @@ HW4c::resizeGL(int w, int h)
 
 void
 HW4c::GetShadowMapExtends(vec3 &extends) {
+	// calculate aspect ratio
+	float aspect = (float) m_winW / (float) m_winH;
 
-	QMatrix4x4 inverseProjectionViewMatrix = (m_camera->view()).inverted();
+	// init projection matrix for camera frustum
+	QMatrix4x4 cameraProjection;
+	cameraProjection.setToIdentity();
+	cameraProjection.perspective(45.0f, aspect, NEAR_DIST, FAR_DIST);
+
+	QMatrix4x4 inverseProjectionViewMatrix = (cameraProjection * m_camera->view()).inverted();
 
 	vec3    frustumVertices[8];
 	frustumVertices[0] = inverseProjectionViewMatrix * vec3(-1.0f,  1.0f, -1.0f);  // near top-left
@@ -483,7 +490,7 @@ HW4c::renderScene()
 
 	// bind texture and draw scene
 	glBindTexture(GL_TEXTURE_2D, m_depthTexture);		// bind depth texture
-	glUniform1i(m_uniform[SHADOW_SHADER][DEPTH], 0);	// set sampler to use texture unit 0
+	glUniform1i(m_uniform[SHADOW_SHADER][SAMPLER], 0);	// set sampler to use texture unit 0
 	drawScene(false);					// draw scene
 	glUseProgram(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -564,7 +571,7 @@ HW4c::displayDepthMap()
 	glUseProgram(m_program[TEXTURE_SHADER].programId());	// use texture shader
 
 	glBindTexture(GL_TEXTURE_2D, m_depthTexture);		// bind depth texture
-	glUniform1i(m_uniform[TEXTURE_SHADER][DEPTH], 0);	// set sampler to use texture unit 0
+	glUniform1i(m_uniform[TEXTURE_SHADER][SAMPLER], 0);	// set sampler to use texture unit 0
 
 	// disable GL_COMPARE_R_TO_TEXTURE above in order to see anything!
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
